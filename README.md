@@ -13,7 +13,8 @@ I used the following packages to interact with the NASA API.
 *jsonlite*: A library containing the function used to connect to the API
 through URL.  
 *magick*: A library used to save image from API URL.  
-*Rcurl*: A library used to read in URL into JSON format
+*Rcurl*: A library used to read in URL into JSON format *chron*: A
+library that allows for date conversions included hours and minutes.
 
 \#Functions
 
@@ -67,7 +68,8 @@ dates and lists them based on their closest approach to earth.
 
 ``` r
 NeoFeed<-function(start_date, end_date, api_key){
- date<-convdate(date)
+ start_date<-dateconv(start_date)
+ end_date<-dateconv(end_date)
  outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/neo/rest/v1/feed?start_date=",start_date,"&end_date=",end_date,"&api_key=",api_key)))
  as.tibble(ouputAPI)
 }
@@ -80,7 +82,6 @@ on its NASA ID.
 
 ``` r
 NeoLookup<-function(asteroid_id, api_key){
- date<-convdate(date)
  outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/neo/rest/v1/neo/",asteroid_id,"?api_key=",api_key)))
  as.tibble(ouputAPI)
 }
@@ -93,8 +94,14 @@ based on date and type of event.
 
 ``` r
 Weather<-function(start_date,end_date,event,api_key){
-#allow for multiple event entries to make the function more user friendly.  Must convert event to all lower case first to account for varying capitalization.  
+  
+start_date<-dateconv(start_date)
+end_date<-dateconv(end_date)
+
+#allow for multiple event entries to make the function more user friendly.  Must convert event entry to all lower case letters  first to account for varying capitalization.  
+
 event<-tolower(event)
+
 if (event=="coronal mass ejection"||event=="cme"||event=="coronal mass ejection (cme)"){
 event<-"CME"
 }
@@ -117,6 +124,7 @@ else if (event=="hight speed stream"||event=="hss"||event=="hight speed stream (
   event<-"HSS"
 }
 else {stop("Error: Invalid weather event entry!")}
+
 
 outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/DONKI/",event,"?startDate=",start_date,"&endDate=",end_date,"&api_key=",api_key)))
 as.tibble(outputAPI)
@@ -163,3 +171,94 @@ else if (func == "Techport"){
 else {stop("Error: Invalid function entry!")}
 }
 ```
+
+\#Exploratory Data Analysis
+
+Now that we have our functions, we can do some data exploration.
+
+I am going to start with the Weather function, and pull data from solar
+flares that occured in
+2019.
+
+``` r
+#use the NASAAPI function to pull solar flare events in 2019 and save the output as an object.
+SF<-NASAAPI("Weather", "Jan 1 2019", "Dec 1 2019", "solar flare","zMTdCaPaYeIjYgd9N91EsaFUvxYsCMR1o32ih13X")
+SF
+```
+
+    ## # A tibble: 7 x 10
+    ##   flrID   instruments  beginTime  peakTime endTime classType sourceLocation activeRegionNum linkedEvents link     
+    ##   <chr>   <list>       <chr>      <chr>    <lgl>   <chr>     <chr>                    <int> <list>       <chr>    
+    ## 1 2019-0… <df [1 × 1]> 2019-01-2… 2019-01… NA      C5.0      N05W26                   12733 <NULL>       https://…
+    ## 2 2019-0… <df [1 × 1]> 2019-01-3… 2019-01… NA      C5.2      N05W79                   12733 <NULL>       https://…
+    ## 3 2019-0… <df [1 × 1]> 2019-03-0… 2019-03… NA      C1.3      N09W04                   12734 <df [1 × 1]> https://…
+    ## 4 2019-0… <df [1 × 1]> 2019-03-2… 2019-03… NA      B6.1      N09W23                   12736 <df [1 × 1]> https://…
+    ## 5 2019-0… <df [1 × 1]> 2019-03-2… 2019-03… NA      C4.8      N08W26                   12736 <df [1 × 1]> https://…
+    ## 6 2019-0… <df [1 × 1]> 2019-03-2… 2019-03… NA      C5.6      N08W34                   12736 <NULL>       https://…
+    ## 7 2019-0… <df [1 × 1]> 2019-05-0… 2019-05… NA      C9.9      N08E50                   12740 <NULL>       https://…
+
+For the purposes of this analysis, I want to modify the character string
+containing the start times and peak times and convert it into a value
+that can be used in
+calculations.
+
+``` r
+#remove the additional information from the start times for CME's and Solar Flares and convert the string into date format including hours and minutes
+ a<-substr(SF$peakTime, 1, 10) #substring containing the date only of peak
+ b<-substr(SF$peakTime, 12, 16) #substring containing the hours and minutes of peak
+ c<-paste(a,b) #combine substrings into one character string 
+ d<-substr(SF$beginTime, 1, 10) #substring containing the date only of begin
+ e<-substr(SF$beginTime, 12, 16) #substring containing the hours and minutes of begin
+ f<-paste(d,e) #combine substrings into one character string
+
+ #convert both strings to chron format and replace existing variables
+SF$beginTime<-as.chron(c, format="%Y-%m-%d  %H:%M") 
+SF$peakTime<-as.chron(f, format="%Y-%m-%d  %H:%M")
+```
+
+Now that the data has been converted into a chron format, I can do
+calculations with the dates. I want to start by creating a variable in
+the solar flare data set that measures the time difference between the
+beginning time and the peak of each solar flare event (in seconds).
+
+``` r
+SF<-SF %>% mutate(begin_peak=difftime(beginTime,peakTime,units="secs"))
+```
+
+Now that I have the difference time, I want to create a categorical
+variable that separates the begin\_peak variable into groups by length
+of time difference: short (\<1000 seconds), medium (1000 to 2000
+seconds), and long(\>2000
+seconds).
+
+``` r
+SF<-SF %>% mutate(length=if_else(begin_peak>2000, "Long", if_else(begin_peak >=1000, "Medium","Short")))
+
+SF
+```
+
+    ## # A tibble: 7 x 12
+    ##   flrID   instruments  beginTime  peakTime endTime classType sourceLocation activeRegionNum linkedEvents link     
+    ##   <chr>   <list>       <chron>    <chron>  <lgl>   <chr>     <chr>                    <int> <list>       <chr>    
+    ## 1 2019-0… <df [1 × 1]> (01/26/19… (01/26/… NA      C5.0      N05W26                   12733 <NULL>       https://…
+    ## 2 2019-0… <df [1 × 1]> (01/30/19… (01/30/… NA      C5.2      N05W79                   12733 <NULL>       https://…
+    ## 3 2019-0… <df [1 × 1]> (03/08/19… (03/08/… NA      C1.3      N09W04                   12734 <df [1 × 1]> https://…
+    ## 4 2019-0… <df [1 × 1]> (03/20/19… (03/20/… NA      B6.1      N09W23                   12736 <df [1 × 1]> https://…
+    ## 5 2019-0… <df [1 × 1]> (03/20/19… (03/20/… NA      C4.8      N08W26                   12736 <df [1 × 1]> https://…
+    ## 6 2019-0… <df [1 × 1]> (03/21/19… (03/21/… NA      C5.6      N08W34                   12736 <NULL>       https://…
+    ## 7 2019-0… <df [1 × 1]> (05/06/19… (05/06/… NA      C9.9      N08E50                   12740 <NULL>       https://…
+    ## # … with 2 more variables: begin_peak <drtn>, length <chr>
+
+With this final data frame, I can create a contingency table of the
+length and the Active Region Number of the flare.
+
+``` r
+table(SF$activeRegionNum,SF$length)
+```
+
+    ##        
+    ##         Long Short
+    ##   12733    0     2
+    ##   12734    0     1
+    ##   12736    1     2
+    ##   12740    0     1
