@@ -11,7 +11,7 @@ I used the following packages to interact with the NASA API
 *tidyverse* package also includes the *readr*, *tidyr*, *dplyr*, and
 *tibble* pakages.  
 *jsonlite*: A function used to connect to the API through URL *magick*:
-library used to save image from API URL *httr*: used to connect to URLs
+library used to save image from API URL
 
 \#Functions
 
@@ -55,12 +55,12 @@ Assets<-function(latitude, longitude, date,api_key){
   #convert date to account for multiple formats
   date<-dateconv(date)
 #get the data from the API
-outputAPI<-jsonlite::fromJSON((paste0("https://api.nasa.gov/planetary/earth/assets?lon=",longitude, "&lat=",latitude,"&date=",date,"&dim=0.15","&api_key=",api_key)))
+outputAPI<-fromJSON((paste0("https://api.nasa.gov/planetary/earth/assets?lon=",longitude, "&lat=",latitude,"&date=",date,"&dim=0.15","&api_key=",api_key)))
 tbl_df(outputAPI)
 }
 ```
 
-\#Neo-Feed Function
+## *Neo-Feed* Function
 
 This function was created to gather a list of asteroids between two
 dates and lists them based on their closest approach to earth.
@@ -68,12 +68,12 @@ dates and lists them based on their closest approach to earth.
 ``` r
 NeoFeed<-function(start_date, end_date, api_key){
  date<-convdate(date)
- outputAPI<-jsonlite::fromJSON(paste0("https://api.nasa.gov/neo/rest/v1/feed?start_date=",start_date,"&end_date=",end_date,"&api_key=",api_key))
+ outputAPI<-fromJSON(paste0("https://api.nasa.gov/neo/rest/v1/feed?start_date=",start_date,"&end_date=",end_date,"&api_key=",api_key))
  tbl_df(ouputAPI)
 }
 ```
 
-\#Neo-Lookup Function
+## *Neo-Lookup* Function
 
 This function was created to allow the user to look up an asteroid based
 on its NASA ID.
@@ -81,12 +81,12 @@ on its NASA ID.
 ``` r
 NeoLookup<-function(asteroid_id, api_key){
  date<-convdate(date)
- outputAPI<-jsonlite::fromJSON(paste0("https://api.nasa.gov/neo/rest/v1/neo/",asteroid_id,"?api_key=",api_key))
+ outputAPI<-fromJSON(paste0("https://api.nasa.gov/neo/rest/v1/neo/",asteroid_id,"?api_key=",api_key))
  tbl_df(ouputAPI)
 }
 ```
 
-\#Weather Events Function
+## *Weather* Function
 
 This function allows the user to look up certain space weather events
 based on date and type of event.
@@ -116,21 +116,50 @@ else if (event=="radiation belt enhancement"||"rbe"||"radiation belt enhancement
 else if (event=="hight speed stream"||event=="hss"||event=="hight speed stream (hss)"){
   event<-"HSS"
 }
-else {warning("Warning: Invalid weather event entry.")}
+else {stop("Error: Invalid weather event entry!")}
 
-outputAPI<-jsonlite::fromJSON(paste0("https://api.nasa.gov/DONKI/",event,"?startDate=",start_date,"&endDate=",end_date,"&api_key=",api_key))
+outputAPI<-fromJSON(paste0("https://api.nasa.gov/DONKI/",event,"?startDate=",start_date,"&endDate=",end_date,"&api_key=",api_key))
 tbl_df(outputAPI)
 }
 ```
 
-# Techport Function
+## Techport Function
 
 This function allows the user to make queries about NASA’s technology
 development programs.
 
 ``` r
-techport<-function(parameter_id, api_key){
-  outputAPI<-jsonlite::JSON(paste0("https://api.nasa.gov/techport/api/projects/",id_parameter,"?api_key=",api_key))
+Techport<-function(parameter_id, api_key){
+  outputAPI<-fromJSON(paste0("https://api.nasa.gov/techport/api/projects/",id_parameter,"?api_key=",api_key))
 tbl_df(outputAPI)
+}
+```
+
+## NASAAPI Wrapper Function
+
+This function combines the API searching functions above into one, to
+allow the user to input the function and arguments at once.
+
+``` r
+NASAAPI<-function(func, ...){
+if (func == "Imagery"){
+    output <- Imagery(...)
+}
+else if (func == "Assets"){
+    output <- Assets(...)
+}
+else if (func == "Neo-Feed"){
+    output <- NeoFeed(...)
+}
+else if (func == "Neo-Lookup"){
+    output <- NeoLookup(...)
+}
+else if (func == "Weather"){
+    output <- Weather(...)
+}
+else if (func == "Techport"){
+    output <- Techport(...)
+}
+else {stop("Error: Invalid function entry!")}
 }
 ```
