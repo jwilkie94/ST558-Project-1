@@ -5,13 +5,15 @@ Jenna Wilkie
 
 ## Requirements
 
-I used the following packages to interact with the NASA API
+I used the following packages to interact with the NASA API.
 
 *tidyverse*: A package useful for data manipulation. Installation of the
 *tidyverse* package also includes the *readr*, *tidyr*, *dplyr*, and
 *tibble* pakages.  
-*jsonlite*: A function used to connect to the API through URL *magick*:
-library used to save image from API URL
+*jsonlite*: A library containing the function used to connect to the API
+through URL.  
+*magick*: A library used to save image from API URL.  
+*Rcurl*: A library used to read in URL into JSON format
 
 \#Functions
 
@@ -29,19 +31,17 @@ return(date)
 
 ## *Imagery* Function
 
-This function is used to access the Landsat 8 image for a specific
-location and date.
+This function is used to provide the URL to access the Landsat 8 image
+for a specific location and date.
 
 ``` r
-Imagery<-function(latitude, longitude, date,api_key){
+Imagery<-function(latitude, longitude, date, api_key){
   #convert date to account for multiple formats
   date<-dateconv(date)
 #get the data from the API
 outputAPI<-paste0("https://api.nasa.gov/planetary/earth/imagery?lon=",longitude, "&lat=",latitude,"&date=",date,"&dim=0.15","&api_key=",api_key)
 
-#save the returned image as an object
-output_image<-image_read(outputAPI)
-print(output_image)
+outputAPI
 }
 ```
 
@@ -55,8 +55,8 @@ Assets<-function(latitude, longitude, date,api_key){
   #convert date to account for multiple formats
   date<-dateconv(date)
 #get the data from the API
-outputAPI<-fromJSON((paste0("https://api.nasa.gov/planetary/earth/assets?lon=",longitude, "&lat=",latitude,"&date=",date,"&dim=0.15","&api_key=",api_key)))
-tbl_df(outputAPI)
+outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/planetary/earth/assets?lon=",longitude, "&lat=",latitude,"&date=",date,"&dim=0.15","&api_key=",api_key)))
+as.tibble(outputAPI)
 }
 ```
 
@@ -68,8 +68,8 @@ dates and lists them based on their closest approach to earth.
 ``` r
 NeoFeed<-function(start_date, end_date, api_key){
  date<-convdate(date)
- outputAPI<-fromJSON(paste0("https://api.nasa.gov/neo/rest/v1/feed?start_date=",start_date,"&end_date=",end_date,"&api_key=",api_key))
- tbl_df(ouputAPI)
+ outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/neo/rest/v1/feed?start_date=",start_date,"&end_date=",end_date,"&api_key=",api_key)))
+ as.tibble(ouputAPI)
 }
 ```
 
@@ -81,8 +81,8 @@ on its NASA ID.
 ``` r
 NeoLookup<-function(asteroid_id, api_key){
  date<-convdate(date)
- outputAPI<-fromJSON(paste0("https://api.nasa.gov/neo/rest/v1/neo/",asteroid_id,"?api_key=",api_key))
- tbl_df(ouputAPI)
+ outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/neo/rest/v1/neo/",asteroid_id,"?api_key=",api_key)))
+ as.tibble(ouputAPI)
 }
 ```
 
@@ -110,7 +110,7 @@ event<-"SEP"
 else if (event=="magnetopause crossing"||event=="mpc"||event=="magnetopause crossing (mpc)"){
   event<-"MPC"
 }
-else if (event=="radiation belt enhancement"||"rbe"||"radiation belt enhancement (rbe)"){
+else if (event=="radiation belt enhancement"||event=="rbe"||"radiation belt enhancement (rbe)"){
   event<-"RBE"
 }
 else if (event=="hight speed stream"||event=="hss"||event=="hight speed stream (hss)"){
@@ -118,8 +118,8 @@ else if (event=="hight speed stream"||event=="hss"||event=="hight speed stream (
 }
 else {stop("Error: Invalid weather event entry!")}
 
-outputAPI<-fromJSON(paste0("https://api.nasa.gov/DONKI/",event,"?startDate=",start_date,"&endDate=",end_date,"&api_key=",api_key))
-tbl_df(outputAPI)
+outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/DONKI/",event,"?startDate=",start_date,"&endDate=",end_date,"&api_key=",api_key)))
+as.tibble(outputAPI)
 }
 ```
 
@@ -130,8 +130,8 @@ development programs.
 
 ``` r
 Techport<-function(parameter_id, api_key){
-  outputAPI<-fromJSON(paste0("https://api.nasa.gov/techport/api/projects/",id_parameter,"?api_key=",api_key))
-tbl_df(outputAPI)
+  outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/techport/api/projects/",id_parameter,"?api_key=",api_key)))
+as.tibble(outputAPI)
 }
 ```
 
