@@ -183,6 +183,13 @@ flares that occured in
 ``` r
 #use the NASAAPI function to pull solar flare events in 2019 and save the output as an object.
 SF<-NASAAPI("Weather", "Jan 1 2019", "Dec 1 2019", "solar flare","zMTdCaPaYeIjYgd9N91EsaFUvxYsCMR1o32ih13X")
+```
+
+    ## Warning: `as.tibble()` was deprecated in tibble 2.0.0.
+    ## Please use `as_tibble()` instead.
+    ## The signature and semantics have changed, see `?as_tibble`.
+
+``` r
 SF
 ```
 
@@ -198,8 +205,9 @@ SF
     ## 7 2019-0… <df [1 × 1]> 2019-05-0… 2019-05… NA      C9.9      N08E50                   12740 <NULL>       https://…
 
 For the purposes of this analysis, I want to modify the character string
-containing the start times and peak times and convert it into a value
-that can be used in
+containing the start times and peak times. First I will remove the “T”
+and “Z” so only the date and time are returned, then I will convert
+those into chron values that can be used in
 calculations.
 
 ``` r
@@ -262,3 +270,14 @@ table(SF$activeRegionNum,SF$length)
     ##   12734    0     1
     ##   12736    1     2
     ##   12740    0     1
+
+I can also create a barplot of these
+results.
+
+``` r
+#convert the active region number to a character variable in the ggplot statement.  
+bar<-ggplot(SF, aes(x=as.character(activeRegionNum)))
+bar+geom_bar(aes(fill=as.factor(length)), position="dodge")+labs(x="Active Region Number", y="Count", title="Bar Plot of Solar Flare Events per Region by Length")+scale_fill_discrete(name="Length")
+```
+
+![](README_files/figure-gfm/barplot1-1.png)<!-- -->
