@@ -13,8 +13,9 @@ I used the following packages to interact with the NASA API.
 *jsonlite*: A library containing the function used to connect to the API
 through URL.  
 *magick*: A library used to save image from API URL.  
-*Rcurl*: A library used to read in URL into JSON format *chron*: A
-library that allows for date conversions included hours and minutes.
+*chron*: A library that allows for date conversions included hours and
+minutes. *RCurl*: A library that contains the getURL function that will
+be used to obtain the API URL.
 
 # Functions
 
@@ -26,7 +27,7 @@ user to enter the date in a variety of formats.
 
 ``` r
 dateconv<-function(date){
- date<-as.Date(date, tryFormats=c("%m-%d-%y","%m-%d-%Y","%m/%d/%y", "%m/%d/%Y",   "%B %d %Y", "%Y-%m-%d",        "%Y/%m/%d", "%B %d, %Y","%b %d, %Y", "%b %d %Y", "%B %d %y", "%B %d, %y", "%b %d %y", "%b %d, %y" ),            optional=TRUE)
+ date<-as.Date(date, tryFormats=c("%m-%d-%y","%m-%d-%Y","%m/%d/%y", "%m/%d/%Y",   "%B %d %Y", "%Y-%m-%d", "%Y/%m/%d", "%B %d, %Y","%b %d, %Y", "%b %d %Y", "%B %d %y", "%B %d, %y", "%b %d %y", "%b %d, %y" ),            optional=TRUE)
  return(date)
 }
 ```
@@ -42,10 +43,10 @@ Imagery<-function(latitude, longitude, date, api_key){
  date<-dateconv(date)
  
  #get the data from the API
- outputAPI<-paste0("https://api.nasa.gov/planetary/earth/imagery?lon=",longitude, "&lat=", latitude, "&date=",   date,"&dim=0.15","&api_key=",api_key)
+ outputAPI<-paste0("https://api.nasa.gov/planetary/earth/imagery?lon=",longitude, "&lat=", latitude, "&date=",  date,"&dim=0.15","&api_key=",api_key)
  
-#Return webpage with image
-outputAPI
+ #Return webpage with image
+ print(image_read(outputAPI))
 }
 ```
 
@@ -60,7 +61,7 @@ Assets<-function(latitude, longitude, date, api_key){
  date<-dateconv(date)
  
  #get the data from the API
- outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/planetary/earth/assets?lon=",longitude, "&lat=",        latitude,"&date=",date,"&dim=0.15","&api_key=",api_key)))
+ outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/planetary/earth/assets?lon=",longitude, "&lat=",latitude,"&date=",date,"&dim=0.15","&api_key=",api_key)))
  
  #convert to tibble
  as.tibble(outputAPI)
@@ -81,7 +82,7 @@ NeoFeed<-function(start_date, end_date, api_key){
  end_date<-dateconv(end_date)
  
  #get the data from the API
- outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/neo/rest/v1/feed?start_date=",start_date,"&end_date=",  end_date,"&api_key=",api_key)))
+ outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/neo/rest/v1/feed?start_date=",start_date,"&end_date=",end_date,"&api_key=",api_key)))
  
  #return data frames
  outputAPI
@@ -98,8 +99,7 @@ NeoLookup<-function(asteroid_id, api_key){
  #get the API
  outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/neo/rest/v1/neo/",asteroid_id,"?api_key=",api_key)))
  
- #convert object to tibble
- as.tibble(outputAPI)
+outputAPI
 }
 ```
 
@@ -143,8 +143,8 @@ else {stop("Error: Invalid weather event entry!")}
 #get API data
 outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/DONKI/",event,"?startDate=",start_date,"&endDate=",end_date,"&api_key=",api_key)))
 
-#convert object to tibble
-as.tibble(outputAPI)
+
+outputAPI
 }
 ```
 
@@ -157,9 +157,8 @@ development programs.
 Techport<-function(parameter_id, api_key){
  #get API data
  outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/techport/api/projects/",id_parameter,"?api_key=",api_key)))
- 
-#output object as tibble
- as.tibble(outputAPI)
+
+outputAPI
 }
 ```
 
@@ -196,16 +195,49 @@ else {stop("Error: Invalid function entry!")}
 
 # EDA: Weather Function
 
-Now that the functions are ready, I can do some data exploration.
-
-I am going to start with the Weather function, and pull data from solar
+Now that the functions are ready, I can do some data exploration. I am
+going to start with the Weather function, and pull data from solar
 flares that occured in
 2019.
 
 ``` r
 #use the NASAAPI function to pull solar flare events in 2019 and save the output as an object.
 SF<-NASAAPI("Weather", "Jan 1 2019", "Dec 31 2019", "solar flare","zMTdCaPaYeIjYgd9N91EsaFUvxYsCMR1o32ih13X")
+SF
 ```
+
+    ##                         flrID             instruments         beginTime
+    ## 1 2019-01-26T13:13:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-01-26T13:13Z
+    ## 2 2019-01-30T05:57:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-01-30T05:57Z
+    ## 3 2019-03-08T03:07:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-08T03:07Z
+    ## 4 2019-03-20T07:05:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-20T07:05Z
+    ## 5 2019-03-20T10:35:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-20T10:35Z
+    ## 6 2019-03-21T03:08:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-21T03:08Z
+    ## 7 2019-05-06T05:04:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-05-06T05:04Z
+    ##            peakTime endTime classType sourceLocation activeRegionNum
+    ## 1 2019-01-26T13:22Z      NA      C5.0         N05W26           12733
+    ## 2 2019-01-30T06:11Z      NA      C5.2         N05W79           12733
+    ## 3 2019-03-08T03:18Z      NA      C1.3         N09W04           12734
+    ## 4 2019-03-20T07:14Z      NA      B6.1         N09W23           12736
+    ## 5 2019-03-20T11:18Z      NA      C4.8         N08W26           12736
+    ## 6 2019-03-21T03:12Z      NA      C5.6         N08W34           12736
+    ## 7 2019-05-06T05:10Z      NA      C9.9         N08E50           12740
+    ##                  linkedEvents
+    ## 1                        NULL
+    ## 2                        NULL
+    ## 3 2019-03-08T04:17:00-CME-001
+    ## 4 2019-03-20T08:24:00-CME-001
+    ## 5 2019-03-20T08:24:00-CME-001
+    ## 6                        NULL
+    ## 7                        NULL
+    ##                                                       link
+    ## 1 https://kauai.ccmc.gsfc.nasa.gov/DONKI/view/FLR/14440/-1
+    ## 2 https://kauai.ccmc.gsfc.nasa.gov/DONKI/view/FLR/14462/-1
+    ## 3 https://kauai.ccmc.gsfc.nasa.gov/DONKI/view/FLR/14548/-1
+    ## 4 https://kauai.ccmc.gsfc.nasa.gov/DONKI/view/FLR/14570/-1
+    ## 5 https://kauai.ccmc.gsfc.nasa.gov/DONKI/view/FLR/14571/-1
+    ## 6 https://kauai.ccmc.gsfc.nasa.gov/DONKI/view/FLR/14577/-1
+    ## 7 https://kauai.ccmc.gsfc.nasa.gov/DONKI/view/FLR/14704/-1
 
 For the purposes of this analysis, I want to modify the character string
 containing the start times and peak times. First I will remove the “T”
@@ -275,7 +307,7 @@ bar+geom_bar(aes(fill=as.factor(length)), position="dodge")+labs(x="Active Regio
 
 ## EDA: NeoFeed Function
 
-Next I will look at data from the Neo-Feed function. I want to return
+Next I will look at data from the NeoFeed function. I want to return
 data frames containing asteroid information for 3/27/2020 and 3/28/2020.
 The function returns a list of data frames; one for each date in the
 search
@@ -289,7 +321,7 @@ I am going to combine some columns into a new data frame. I am
 interested in the absolute magnitude’s relation to estimated diameter
 (in meters) and whether the asteroid is potentially hazardous or not. To
 explore this further, I will create a new data frame with those columns
-and a new column for the date.
+and aolumn for the date.
 
 ``` r
 #create a new column "date" in each data frame 
@@ -316,8 +348,8 @@ NeoNew$MinDia<-as.integer(NeoNew$MinDia)
 NeoNew$MaxDia<-as.integer(NeoNew$MaxDia)
 ```
 
-Now that all of the necessary data is combined, I can produce a
-contingency table for date and the potential hazard of the asteroid.
+Now that the necessary data is combined, I can produce a contingency
+table for date and the potential hazard of the asteroid.
 
 ``` r
 con2<-table(NeoNew$potential_hazard, NeoNew$date)
@@ -343,26 +375,36 @@ sp+geom_point(aes(col=date))+labs(title="Min vs. Max Estimated Diameter", x='Min
 
 ![](README_files/figure-gfm/scatter-1.png)<!-- -->
 
-The correlation looks to be close to 1, so the two variables seem to
-have a strong linear relationship. Date does not appear to affect the
-correlation, but March 27, 2020 had larger asteroids approaching.
+The correlation looks to be close to 1, so the graph shows a strong
+linear relationship. Date does not appear to affect the correlation, but
+March 27, 2020 had larger asteroids approaching.
 
-Now, I can graph the Absolute Magnitude against max diameter and find
-the correlation.
+I have two values for estimated diameter, max and min. I am going to add
+a variable to the new data frame that is the approximate average
+estimated diameter of each asteroid.
+
+``` r
+NeoNew$MeanDia<-(NeoNew$MaxDia+NeoNew$MinDia)/2
+```
+
+Now, I can graph the absolute magnitude against mean estimated diameter
+and find the correlation.
 
 ``` r
 #find the correlation of the data
-correlation<-cor(NeoNew$MaxDia,NeoNew$Absmag)
-sp2<-ggplot(NeoNew, aes(x=MaxDia, y=Absmag))
-sp2+geom_point(aes(col=date))+labs(title="Max Estimated Diameter vs. Absolute Magnitude", x='Maximum Estimated Diameter', y='Absolute Magnitude')+geom_text(x=250, y=18,label=paste0("Correlation= ",round(correlation,2)))
+correlation<-cor(NeoNew$MeanDia,NeoNew$Absmag)
+sp2<-ggplot(NeoNew, aes(x=MeanDia, y=Absmag))
+sp2+geom_point(aes(col=date))+labs(title="Mean Estimated Diameter vs. Absolute Magnitude", x='Mean Estimated Diameter', y='Absolute Magnitude')+geom_text(x=250, y=18,label=paste0("Correlation= ",round(correlation,2)))
 ```
 
-![](README_files/figure-gfm/scatter2-1.png)<!-- --> The correlation is
-fairly strong (-.82), but the graph looks like it has a curve,
-suggesting a possible non linear relationship between the two variables.
-Date once again appears to have no effect on correlation.
+![](README_files/figure-gfm/scatter2-1.png)<!-- -->
 
-Next I’ll look at a boxplot of the Absolute Magnitude data. I want to
+The correlation is fairly strong (-.82), but the graph looks like it has
+a curve, suggesting a possible non linear relationship between the two
+variables. The larger asteroids on 3-27 are making the curve more
+pronounced.
+
+Next I’ll look at a boxplot of the absolute magnitude data. I want to
 group this by date as well.
 
 ``` r
@@ -370,12 +412,14 @@ b<-ggplot(NeoNew,aes(x=date, y=Absmag))
 b+geom_boxplot(fill='purple')+labs(title="Boxplot of Absolute Magnitude by Date", y="Absolute Magnitude", x="Date")
 ```
 
-![](README_files/figure-gfm/box-1.png)<!-- --> March 28, 2020 has larger
-Absolute Magnitudes than March 27, 2020. While the reverse is true for
-Maxiumum Estimated Diameter. This observation agrees with the negative
+![](README_files/figure-gfm/box-1.png)<!-- -->
+
+March 28, 2020 has larger absolute magnitudes than March 27, 2020. The
+scatter plot above shows that the opposite is true for minimum and
+maximum estimated diameter. This observation agrees with the negative
 correlation observed in the scatter plot above.
 
-Last, I will look at a histogram for Absolute Magnitude.
+Last, I will look at a histogram for absolute magnitude.
 
 ``` r
 h<-ggplot(NeoNew,aes(x=Absmag))
@@ -384,5 +428,6 @@ h+geom_histogram(color='grey',fill='turquoise', binwidth=2)+labs(title='Frequenc
 
 ![](README_files/figure-gfm/histogram-1.png)<!-- -->
 
-The counts for Absolute Magnitude appear to follow an approximately
-normal distribution.
+The counts for absolute magnitude appear to follow an approximately
+normal distribution, so there were not a lot of unusually large or
+unusually small magnitudes observed on these two dates.
