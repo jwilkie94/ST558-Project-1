@@ -1,0 +1,320 @@
+---
+title: "ST558 Project 1"
+author: "Jenna Wilkie"
+date: "10/2/2021"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#api key=zMTdCaPaYeIjYgd9N91EsaFUvxYsCMR1o32ih13X
+```
+
+## Requirements
+
+I used the following packages to interact with the NASA API.
+
+*tidyverse*: A package useful for data manipulation.  Installation of the *tidyverse* package also includes the *readr*, *tidyr*, *dplyr*, and *tibble* pakages.    
+*jsonlite*:  A library containing the function used to connect to the API through URL.  
+*magick*: A library used to save image from API URL.   
+*Rcurl*:  A library used to read in URL into JSON format
+*chron*: A library that allows for date conversions included hours and minutes. 
+  
+
+```{r include=FALSE}
+library(tidyverse)
+library(jsonlite)
+library(magick)
+library(RCurl)
+library(chron)
+library(ggplot2)
+```
+
+#Functions
+
+## *DateConv* Helper Function
+
+This function was created to convert multiple date formats into the standard format used for the API endpoint URL's
+
+```{r dateconv}
+dateconv<-function(date){
+ date<-as.Date(date, tryFormats=c("%m-%d-%y","%m-%d-%Y","%m/%d/%y", "%m/%d/%Y",   "%B %d %Y", "%Y-%m-%d", "%Y/%m/%d", "%B %d, %Y","%b %d, %Y", "%b %d %Y", "%B %d %y", "%B %d, %y", "%b %d %y", "%b %d, %y" ), optional=TRUE)
+return(date)
+}
+```
+
+## *Imagery*  Function
+
+This function is used to provide the URL to access the Landsat 8 image for a specific location and date.
+
+```{r Imagery}
+Imagery<-function(latitude, longitude, date, api_key){
+  #convert date to account for multiple formats
+  date<-dateconv(date)
+#get the data from the API
+outputAPI<-paste0("https://api.nasa.gov/planetary/earth/imagery?lon=",longitude, "&lat=",latitude,"&date=",date,"&dim=0.15","&api_key=",api_key)
+
+as.list(outputAPI)
+}
+```
+
+## *Assets* Function
+
+This function is used to access the date times and asset names for the closest available imagery.
+```{r Assets}
+Assets<-function(latitude, longitude, date,api_key){
+  #convert date to account for multiple formats
+  date<-dateconv(date)
+#get the data from the API
+outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/planetary/earth/assets?lon=",longitude, "&lat=",latitude,"&date=",date,"&dim=0.15","&api_key=",api_key)))
+as.tibble(outputAPI)
+}
+```
+
+## *Neo-Feed* Function
+
+This function was created to gather a list of asteroids between two dates up to seven days apart and lists them based on their closest approach to earth.  Each Date will be returned as a data frame of asteroids.  
+
+```{r Neo-Feed}
+NeoFeed<-function(start_date, end_date, api_key){
+ start_date<-dateconv(start_date)
+ end_date<-dateconv(end_date)
+ outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/neo/rest/v1/feed?start_date=",start_date,"&end_date=",end_date,"&api_key=",api_key)))
+outputAPI
+}
+```
+
+## *Neo-Lookup* Function
+
+This function was created to allow the user to look up an asteroid based on its NASA ID.  
+
+```{r Neo-Lookup}
+NeoLookup<-function(asteroid_id, api_key){
+ outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/neo/rest/v1/neo/",asteroid_id,"?api_key=",api_key)))
+as.tibble(outputAPI)
+}
+```
+
+## *Weather* Function
+
+This function allows the user to look up certain space weather events based on date and type of event.
+
+```{r Weather}
+Weather<-function(start_date,end_date,event,api_key){
+  
+start_date<-dateconv(start_date)
+end_date<-dateconv(end_date)
+
+#allow for multiple event entries to make the function more user friendly.  Must convert event entry to all lower case letters  first to account for varying capitalization.  
+
+event<-tolower(event)
+
+if (event=="coronal mass ejection"||event=="cme"||event=="coronal mass ejection (cme)"){
+event<-"CME"
+}
+else if (event=="geomagnetic storm"||event=="gst"||event=="geo storm"||event=="geomagnetic storm (gst)"){
+event<-"GST"
+}
+else if (event=="solar flare"||event=="flr"||event=="flare"||event=="solar flare (flr)"){
+event<-"FLR"
+}
+else if (event=="solar energetic particle"||event=="sep"||event=="solar energetic particle (sep)"){
+event<-"SEP"
+}
+else if (event=="magnetopause crossing"||event=="mpc"||event=="magnetopause crossing (mpc)"){
+  event<-"MPC"
+}
+else if (event=="radiation belt enhancement"||event=="rbe"||"radiation belt enhancement (rbe)"){
+  event<-"RBE"
+}
+else if (event=="hight speed stream"||event=="hss"||event=="hight speed stream (hss)"){
+  event<-"HSS"
+}
+else {stop("Error: Invalid weather event entry!")}
+
+
+outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/DONKI/",event,"?startDate=",start_date,"&endDate=",end_date,"&api_key=",api_key)))
+as.tibble(outputAPI)
+}
+```
+
+## Techport Function
+
+This function allows the user to make queries about NASA's technology development programs.  
+
+```{r Techport}
+Techport<-function(parameter_id, api_key){
+  outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/techport/api/projects/",id_parameter,"?api_key=",api_key)))
+as.tibble(outputAPI)
+}
+
+```
+
+## NASAAPI Wrapper Function
+
+This function combines the API searching functions above into one, to allow the user to input the function and arguments at once.  
+
+```{r NASAAPI}
+NASAAPI<-function(func, ...){
+if (func == "Imagery"){
+    output <- Imagery(...)
+}
+else if (func == "Assets"){
+    output <- Assets(...)
+}
+else if (func == "NeoFeed"){
+    output <- NeoFeed(...)
+}
+else if (func == "Neo-Lookup"){
+    output <- NeoLookup(...)
+}
+else if (func == "Weather"){
+    output <- Weather(...)
+}
+else if (func == "Techport"){
+    output <- Techport(...)
+}
+else {stop("Error: Invalid function entry!")}
+}
+
+```
+
+#Exploratory Data Analysis
+
+Now that we have our functions, we can do some data exploration.
+
+I am going to start with the Weather function, and pull data from solar flares that occured in 2019.
+
+```{r SF}
+#use the NASAAPI function to pull solar flare events in 2019 and save the output as an object.
+SF<-NASAAPI("Weather", "Jan 1 2019", "Dec 1 2019", "solar flare","zMTdCaPaYeIjYgd9N91EsaFUvxYsCMR1o32ih13X")
+SF
+```
+ 
+
+For the purposes of this analysis, I want to modify the character string containing the start times and peak times.  First I will remove the "T" and "Z" so only the date and time are returned, then I will convert those into chron values that can be used in calculations.  
+
+```{r dates}
+#remove the additional information from the start times for CME's and Solar Flares and convert the string into date format including hours and minutes
+ a<-substr(SF$peakTime, 1, 10) #substring containing the date only of peak
+ b<-substr(SF$peakTime, 12, 16) #substring containing the hours and minutes of peak
+ c<-paste(a,b) #combine substrings into one character string 
+ d<-substr(SF$beginTime, 1, 10) #substring containing the date only of begin
+ e<-substr(SF$beginTime, 12, 16) #substring containing the hours and minutes of begin
+ f<-paste(d,e) #combine substrings into one character string
+
+ #convert both strings to chron format and replace existing variables
+SF$beginTime<-as.chron(c, format="%Y-%m-%d  %H:%M") 
+SF$peakTime<-as.chron(f, format="%Y-%m-%d  %H:%M")
+```
+
+Now that the data has been converted into a chron format, I can do calculations with the dates.  I want to start by creating a variable in the solar flare data set that measures the time difference between the beginning time and the peak of each solar flare event (in seconds).  
+
+```{r begin_peak}
+SF<-SF %>% mutate(begin_peak=difftime(beginTime,peakTime,units="secs"))
+```
+
+Now that I have the difference time, I want to create a categorical variable that separates the begin_peak variable into groups by length of time difference: short (<1000 seconds), medium (1000 to 2000 seconds), and long(>2000 seconds).
+
+```{r}
+SF<-SF %>% mutate(length=if_else(begin_peak>2000, "Long", if_else(begin_peak >=1000, "Medium","Short")))
+
+SF
+```
+
+With this final data frame, I can create a contingency table of the length and the Active Region Number of the flare. 
+
+```{r}
+table(SF$activeRegionNum,SF$length)
+```
+
+
+I can also create a barplot of these results.
+
+```{r barplot1}
+#convert the active region number to a character variable in the ggplot statement.  
+bar<-ggplot(SF, aes(x=as.character(activeRegionNum)))
+bar+geom_bar(aes(fill=as.factor(length)), position="dodge")+labs(x="Active Region Number", y="Count", title="Bar Plot of Solar Flare Events per Region by Length")+scale_fill_discrete(name="Length")
+```
+
+Next I will look at data from the Neo-Feed function.  I want to return data frames containing asteroid information for 3/27/2020 and 3/28/2020.  The function returns a list of data frames for each date in the search range containing information about asteroids.
+
+```{r}
+NeoF<-NASAAPI("NeoFeed", "03/27/2020", "03/28/2020", "zMTdCaPaYeIjYgd9N91EsaFUvxYsCMR1o32ih13X")
+NeoF
+```
+
+Now that I have two data frames, one for each date in the range I searched, I am going to combine some columns into a new data frame. I am interested in the absolute magnitude's relation to estimated diameter (in meters) and whether the asteroid is potentially hazardous or not.  To explore this further, I will combine those columns from each data frame into one object with a new column for the date.     
+
+```{r Date}
+#create a new column "date" in each data frame 
+NeoF$near_earth_objects$`2020-03-27`$date<-"2020-03-27"
+NeoF$near_earth_objects$`2020-03-28`$date<-"2020-03-28"
+```
+
+
+```{r combine}
+#combine the desired columns from each data frame.  Add a new column for the date to each new data frame
+NeoNew1<-cbind(NeoF$near_earth_objects$`2020-03-27`$absolute_magnitude_h, NeoF$near_earth_objects$`2020-03-27`$estimated_diameter$meters$estimated_diameter_min, NeoF$near_earth_objects$`2020-03-27`$estimated_diameter$meters$estimated_diameter_max, NeoF$near_earth_objects$`2020-03-27`$is_potentially_hazardous_asteroid, NeoF$near_earth_objects$`2020-03-27`$date)
+
+
+NeoNew2<-cbind(NeoF$near_earth_objects$`2020-03-28`$absolute_magnitude_h, NeoF$near_earth_objects$`2020-03-28`$estimated_diameter$meters$estimated_diameter_min, NeoF$near_earth_objects$`2020-03-28`$estimated_diameter$meters$estimated_diameter_max, NeoF$near_earth_objects$`2020-03-28`$is_potentially_hazardous_asteroid,NeoF$near_earth_objects$`2020-03-28`$date)
+
+#combine data from both dates into one final data frame and add column names then convert to tibble
+NeoNew<-rbind(NeoNew1, NeoNew2)
+colnames(NeoNew)<-c('Absmag', 'MinDia', 'MaxDia', 'potential_hazard', 'date')
+
+#convert to tibble
+NeoNew<-as.tibble(NeoNew)
+
+#convert all necessary numeric columns to integers
+NeoNew$Absmag<-as.integer(NeoNew$Absmag)
+NeoNew$MinDia<-as.integer(NeoNew$MinDia)
+NeoNew$MaxDia<-as.integer(NeoNew$MaxDia)
+
+NeoNew<-as.data.frame(NeoNew)
+NeoNew
+```
+
+
+Now that all of the necessary data is combined, we can produce a contingency table for date and if the asteroid is potentially hazardous or not.  
+
+```{r con2}
+con2<-table(NeoNew$potential_hazard, NeoNew$date)
+con2
+```
+
+Only 1 asteroid was potentially hazardous on March 27, 2020 and none were potentially hazardous on March 28, 2020 (lucky for us!).
+
+
+Below is a scatter plot between the minimum diameter and maximum diameter of each asteroid.  
+
+```{r scatter}
+sp<-ggplot(NeoNew, aes(x=MinDia, y=MaxDia))
+sp+geom_point(aes(col=date))+labs(title="Min vs. Max Estimated Diameter", x='Minimum Estimated Diameter', y='Maximum Estimated Diameter' )
+```
+ 
+ Now, I can graph the Absolute Magnitude against max diameter and find the correlation for each date.  
+ 
+```{r scatter2}
+#find the correlation of the data
+correlation<-cor(NeoNew$MaxDia,NeoNew$Absmag)
+sp2<-ggplot(NeoNew, aes(x=MaxDia, y=Absmag))
+sp2+geom_point(aes(col=date))+labs(title="Max Estimated Diameter vs. Absolute Magnitude", x='Maximum Estimated Diameter', y='Absolute Magnitude')+geom_text(x=250, y=18,label=paste0("Correlation= ",round(correlation,2)))
+```
+
+
+I can also look at a boxplot of the Absolute Magnitude data.  I want to group this by date as well.
+
+```{r box}
+b<-ggplot(NeoNew,aes(x=date, y=Absmag))
+b+geom_boxplot(fill='purple')+labs(title="Boxplot of Absolute Magnitude by Date", y="Absolute Magnitude", x="Date")
+```
+
+I can also look at a histogram of absolute magnitude.
+
+```{r histogram}
+h<-ggplot(NeoNew,aes(x=Absmag))
+h+geom_histogram(color='grey',fill='turquoise', binwidth=2)+labs(title='Frequency of Absolute Magnitude Count', x='Absolute Magnitude', y='Count')
+```
+
