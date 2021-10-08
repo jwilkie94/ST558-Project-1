@@ -26,7 +26,7 @@ standard format used for the API endpoint URL’s. This will allow the
 user to enter the date in a variety of formats.
 
 ``` r
-dateconv<-function(date){
+DateConv<-function(date){
  date<-as.Date(date, tryFormats=c("%m-%d-%y","%m-%d-%Y","%m/%d/%y", "%m/%d/%Y",   "%B %d %Y", "%Y-%m-%d", "%Y/%m/%d", "%B %d, %Y","%b %d, %Y", "%b %d %Y", "%B %d %y", "%B %d, %y", "%b %d %y", "%b %d, %y" ),            optional=TRUE)
  return(date)
 }
@@ -40,7 +40,7 @@ for a specific location and date.
 ``` r
 Imagery<-function(latitude, longitude, date, api_key){
  #convert date to account for multiple formats
- date<-dateconv(date)
+ date<-DateConv(date)
  
  #get the data from the API
  outputAPI<-paste0("https://api.nasa.gov/planetary/earth/imagery?lon=",longitude, "&lat=", latitude, "&date=",  date,"&dim=0.15","&api_key=",api_key)
@@ -58,13 +58,12 @@ closest available imagery.
 ``` r
 Assets<-function(latitude, longitude, date, api_key){
  #convert date to account for multiple formats
- date<-dateconv(date)
+ date<-DateConv(date)
  
  #get the data from the API
  outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/planetary/earth/assets?lon=",longitude, "&lat=",latitude,"&date=",date,"&dim=0.15","&api_key=",api_key)))
  
- #convert to tibble
- as.tibble(outputAPI)
+outputAPI
 }
 ```
 
@@ -78,8 +77,8 @@ asteroids.
 ``` r
 NeoFeed<-function(start_date, end_date, api_key){
  #convert the start and end dates to the appropriate format
- start_date<-dateconv(start_date)
- end_date<-dateconv(end_date)
+ start_date<-DateConv(start_date)
+ end_date<-DateConv(end_date)
  
  #get the data from the API
  outputAPI<-fromJSON(getURL(paste0("https://api.nasa.gov/neo/rest/v1/feed?start_date=",start_date,"&end_date=",end_date,"&api_key=",api_key)))
@@ -111,8 +110,8 @@ based on date and type of event.
 ``` r
 Weather<-function(start_date,end_date,event,api_key){
 #convert the start and end dates to the appropriate format 
- start_date<-dateconv(start_date)
- end_date<-dateconv(end_date)
+ start_date<-DateConv(start_date)
+ end_date<-DateConv(end_date)
 
  #allow for multiple event entries to make the function more user friendly.  Must convert event entry to all lower case letters first to account for differences in capitalization.  
 event<-tolower(event)
@@ -202,34 +201,26 @@ flares that occured in
 
 ``` r
 #use the NASAAPI function to pull solar flare events in 2019 and save the output as an object.
-SF<-NASAAPI("Weather", "Jan 1 2019", "Dec 31 2019", "solar flare","zMTdCaPaYeIjYgd9N91EsaFUvxYsCMR1o32ih13X")
-SF
+SolarFlare<-NASAAPI("Weather", "Jan 1 2019", "Dec 31 2019", "solar flare","zMTdCaPaYeIjYgd9N91EsaFUvxYsCMR1o32ih13X")
+SolarFlare
 ```
 
-    ##                         flrID             instruments         beginTime
-    ## 1 2019-01-26T13:13:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-01-26T13:13Z
-    ## 2 2019-01-30T05:57:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-01-30T05:57Z
-    ## 3 2019-03-08T03:07:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-08T03:07Z
-    ## 4 2019-03-20T07:05:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-20T07:05Z
-    ## 5 2019-03-20T10:35:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-20T10:35Z
-    ## 6 2019-03-21T03:08:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-21T03:08Z
-    ## 7 2019-05-06T05:04:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-05-06T05:04Z
-    ##            peakTime endTime classType sourceLocation activeRegionNum
-    ## 1 2019-01-26T13:22Z      NA      C5.0         N05W26           12733
-    ## 2 2019-01-30T06:11Z      NA      C5.2         N05W79           12733
-    ## 3 2019-03-08T03:18Z      NA      C1.3         N09W04           12734
-    ## 4 2019-03-20T07:14Z      NA      B6.1         N09W23           12736
-    ## 5 2019-03-20T11:18Z      NA      C4.8         N08W26           12736
-    ## 6 2019-03-21T03:12Z      NA      C5.6         N08W34           12736
-    ## 7 2019-05-06T05:10Z      NA      C9.9         N08E50           12740
-    ##                  linkedEvents
-    ## 1                        NULL
-    ## 2                        NULL
-    ## 3 2019-03-08T04:17:00-CME-001
-    ## 4 2019-03-20T08:24:00-CME-001
-    ## 5 2019-03-20T08:24:00-CME-001
-    ## 6                        NULL
-    ## 7                        NULL
+    ##                         flrID             instruments         beginTime          peakTime endTime classType
+    ## 1 2019-01-26T13:13:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-01-26T13:13Z 2019-01-26T13:22Z      NA      C5.0
+    ## 2 2019-01-30T05:57:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-01-30T05:57Z 2019-01-30T06:11Z      NA      C5.2
+    ## 3 2019-03-08T03:07:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-08T03:07Z 2019-03-08T03:18Z      NA      C1.3
+    ## 4 2019-03-20T07:05:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-20T07:05Z 2019-03-20T07:14Z      NA      B6.1
+    ## 5 2019-03-20T10:35:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-20T10:35Z 2019-03-20T11:18Z      NA      C4.8
+    ## 6 2019-03-21T03:08:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-03-21T03:08Z 2019-03-21T03:12Z      NA      C5.6
+    ## 7 2019-05-06T05:04:00-FLR-001 GOES15: SEM/XRS 1.0-8.0 2019-05-06T05:04Z 2019-05-06T05:10Z      NA      C9.9
+    ##   sourceLocation activeRegionNum                linkedEvents
+    ## 1         N05W26           12733                        NULL
+    ## 2         N05W79           12733                        NULL
+    ## 3         N09W04           12734 2019-03-08T04:17:00-CME-001
+    ## 4         N09W23           12736 2019-03-20T08:24:00-CME-001
+    ## 5         N08W26           12736 2019-03-20T08:24:00-CME-001
+    ## 6         N08W34           12736                        NULL
+    ## 7         N08E50           12740                        NULL
     ##                                                       link
     ## 1 https://kauai.ccmc.gsfc.nasa.gov/DONKI/view/FLR/14440/-1
     ## 2 https://kauai.ccmc.gsfc.nasa.gov/DONKI/view/FLR/14462/-1
@@ -247,25 +238,26 @@ calculations.
 
 ``` r
 #remove the additional information from the start times for CME's and Solar Flares and convert the string into date format including hours and minutes
- a<-substr(SF$peakTime, 1, 10) #substring containing the date only of peak
- b<-substr(SF$peakTime, 12, 16) #substring containing the hours and minutes of peak
+ a<-substr(SolarFlare$peakTime, 1, 10) #substring containing the date only of peak
+ b<-substr(SolarFlare$peakTime, 12, 16) #substring containing the hours and minutes of peak
  c<-paste(a,b) #combine substrings into one character string 
- d<-substr(SF$beginTime, 1, 10) #substring containing the date only of begin
- e<-substr(SF$beginTime, 12, 16) #substring containing the hours and minutes of begin
+ d<-substr(SolarFlare$beginTime, 1, 10) #substring containing the date only of begin
+ e<-substr(SolarFlare$beginTime, 12, 16) #substring containing the hours and minutes of begin
  f<-paste(d,e) #combine substrings into one character string
 
  #convert both strings to chron format and replace existing variables
-SF$beginTime<-as.chron(c, format="%Y-%m-%d  %H:%M") 
-SF$peakTime<-as.chron(f, format="%Y-%m-%d  %H:%M")
+SolarFlare$beginTime<-as.chron(c, format="%Y-%m-%d  %H:%M") 
+SolarFlare$peakTime<-as.chron(f, format="%Y-%m-%d  %H:%M")
 ```
 
 Now that the data has been converted into a chron format, I can do
 calculations with the dates. I want to start by creating a variable in
 the solar flare data set that measures the time difference between the
-beginning time and the peak of each solar flare event (in seconds).
+beginning time and the peak of each solar flare event (in
+seconds).
 
 ``` r
-SF<-SF %>% mutate(begin_peak=difftime(beginTime,peakTime,units="secs"))
+SolarFlare<-SolarFlare %>% mutate(begin_peak=difftime(beginTime,peakTime,units="secs"))
 ```
 
 Now that I have the difference time, I want to create a categorical
@@ -275,7 +267,7 @@ seconds), and long(\>2000
 seconds).
 
 ``` r
-SF<-SF %>% mutate(length=if_else(begin_peak>2000, "Long", if_else(begin_peak >=1000, "Medium","Short")))
+SolarFlare<-SolarFlare %>% mutate(length=if_else(begin_peak>2000, "Long", if_else(begin_peak >=1000, "Medium","Short")))
 ```
 
 With this final data frame, I can create a contingency table of the
@@ -284,7 +276,7 @@ there are no medium length flares in the data set, and only 1 long
 flare.
 
 ``` r
-table(SF$activeRegionNum,SF$length)
+table(SolarFlare$activeRegionNum,SolarFlare$length)
 ```
 
     ##        
@@ -299,8 +291,8 @@ results.
 
 ``` r
 #convert the active region number to a character variable in the ggplot statement.  
-bar<-ggplot(SF, aes(x=as.character(activeRegionNum)))
-bar+geom_bar(aes(fill=as.factor(length)), position="dodge")+labs(x="Active Region Number", y="Count", title="Bar Plot of Solar Flare Events per Region by Length")+scale_fill_discrete(name="Length")
+bp<-ggplot(SolarFlare, aes(x=as.character(activeRegionNum)))
+bp+geom_bar(aes(fill=as.factor(length)), position="dodge")+labs(x="Active Region Number", y="Count", title="Bar Plot of Solar Flare Events per Region by Length")+scale_fill_discrete(name="Length")
 ```
 
 ![](README_files/figure-gfm/barplot1-1.png)<!-- -->
@@ -352,8 +344,8 @@ Now that the necessary data is combined, I can produce a contingency
 table for date and the potential hazard of the asteroid.
 
 ``` r
-con2<-table(NeoNew$potential_hazard, NeoNew$date)
-con2
+Con2<-table(NeoNew$potential_hazard, NeoNew$date)
+Con2
 ```
 
     ##        
@@ -408,8 +400,8 @@ Next I’ll look at a boxplot of the absolute magnitude data. I want to
 group this by date as well.
 
 ``` r
-b<-ggplot(NeoNew,aes(x=date, y=Absmag))
-b+geom_boxplot(fill='purple')+labs(title="Boxplot of Absolute Magnitude by Date", y="Absolute Magnitude", x="Date")
+bp<-ggplot(NeoNew,aes(x=date, y=Absmag))
+bp+geom_boxplot(fill='purple')+labs(title="Boxplot of Absolute Magnitude by Date", y="Absolute Magnitude", x="Date")
 ```
 
 ![](README_files/figure-gfm/box-1.png)<!-- -->
@@ -422,8 +414,8 @@ correlation observed in the scatter plot above.
 Last, I will look at a histogram for absolute magnitude.
 
 ``` r
-h<-ggplot(NeoNew,aes(x=Absmag))
-h+geom_histogram(color='grey',fill='turquoise', binwidth=2)+labs(title='Frequency of Absolute Magnitude Count', x='Absolute Magnitude', y='Count')
+hp<-ggplot(NeoNew,aes(x=Absmag))
+hp+geom_histogram(color='grey',fill='turquoise', binwidth=2)+labs(title='Frequency of Absolute Magnitude Count', x='Absolute Magnitude', y='Count')
 ```
 
 ![](README_files/figure-gfm/histogram-1.png)<!-- -->
