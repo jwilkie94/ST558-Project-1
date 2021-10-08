@@ -296,7 +296,7 @@ bar_plot<-ggplot(solar_flare, aes(x=as.character(activeRegionNum)))
 bar_plot+geom_bar(aes(fill=as.factor(length)), position="dodge")+labs(x="Active Region Number", y="Count", title="Bar Plot of Solar Flare Events per Region by Length")+scale_fill_discrete(name="Length")
 ```
 
-![](_imagesbar_plot-1.png)<!-- -->
+![](/_images/bar_plot-1.png)<!-- -->
 
 ## EDA: Neo\_Feed Function
 
@@ -367,7 +367,7 @@ plot<-scatter_plot+geom_point(aes(col=date))+labs(title="Min vs. Max Estimated D
 plot
 ```
 
-![](_imagesscatter_plot-1.png)<!-- -->
+![](/_images/scatter_plot-1.png)<!-- -->
 
 The correlation looks to be close to 1, so the graph shows a strong
 linear relationship. Date does not appear to affect the correlation, but
@@ -392,7 +392,7 @@ plot<-scatter_plot_2+geom_point(aes(col=date))+labs(title="Mean Estimated Diamet
 plot
 ```
 
-![](_imagesscatter_plot_2-1.png)<!-- -->
+![](/_images/scatter_plot_2-1.png)<!-- -->
 
 The correlation is fairly strong (-.82), but the graph looks like it has
 a curve, suggesting a possible non linear relationship between the two
@@ -408,7 +408,7 @@ plot<-box_plot+geom_boxplot(fill='purple')+labs(title="Boxplot of Absolute Magni
 plot
 ```
 
-![](_imagesbox_plot-1.png)<!-- -->
+![](/_images/box_plot-1.png)<!-- -->
 
 March 28, 2020 has larger absolute magnitudes than March 27, 2020. The
 scatter plot above shows that the opposite is true for minimum and
@@ -423,7 +423,7 @@ plot<-histogram+geom_histogram(color='grey',fill='turquoise', binwidth=2)+labs(t
 plot
 ```
 
-![](_imageshistogram-1.png)<!-- -->
+![](/_images/histogram-1.png)<!-- -->
 
 The counts for absolute magnitude appear to follow an approximately
 normal distribution, so there were not a lot of unusually large or
